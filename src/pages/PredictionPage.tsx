@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
   Card,
@@ -320,8 +319,7 @@ const PredictionPage = () => {
 
                       <Progress
                         value={prediction.riskScore}
-                        className="w-full h-3"
-                        indicatorClassName={prediction.color}
+                        className={`w-full h-3 ${prediction.color}`}
                       />
                     </div>
 
