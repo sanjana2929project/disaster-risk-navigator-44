@@ -11,7 +11,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 
-// Risk data for different disasters
 const riskData = {
   earthquake: {
     regions: [
@@ -91,27 +90,13 @@ const MapPage = () => {
   const [filteredRegions, setFilteredRegions] = useState<Array<any>>([]);
   const { toast } = useToast();
 
-  // Initialize map
   useEffect(() => {
     if (!mapContainer.current) return;
     if (mapInstance) return; // Don't initialize if map already exists
 
-    // Use mapboxgl from window
-    if (!window.mapboxgl) {
-      console.error("Mapbox GL JS is not loaded. Make sure the script is included.");
-      toast({
-        variant: "destructive",
-        title: "Map Error",
-        description: "Could not load map library. Please try refreshing the page.",
-      });
-      return;
-    }
-
     try {
-      // Set access token
       window.mapboxgl.accessToken = mapboxToken;
       
-      // Create new map instance
       const map = new window.mapboxgl.Map({
         container: mapContainer.current,
         style: "mapbox://styles/mapbox/light-v11",
@@ -120,7 +105,6 @@ const MapPage = () => {
         projection: "globe",
       });
 
-      // Add navigation controls
       map.addControl(
         new window.mapboxgl.NavigationControl({
           visualizePitch: true,
@@ -128,25 +112,21 @@ const MapPage = () => {
         "top-right"
       );
 
-      // Wait for map to load
       map.on("load", () => {
         setMapLoaded(true);
         setMapInstance(map);
 
-        // Add atmosphere and fog effects for 3D globe appearance
         map.setFog({
           color: "rgb(255, 255, 255)",
           "high-color": "rgb(200, 200, 225)",
           "horizon-blend": 0.2,
         });
 
-        // Start globe rotation animation
         let userInteracting = false;
         const rotationDegrees = 0.1;
 
         const rotateGlobe = () => {
           if (!map) return;
-          // Only rotate if user is not interacting
           if (!userInteracting) {
             const center = map.getCenter();
             center.lng += rotationDegrees;
@@ -159,7 +139,6 @@ const MapPage = () => {
           requestAnimationFrame(rotateGlobe);
         };
 
-        // Track user interaction
         map.on("mousedown", () => {
           userInteracting = true;
         });
@@ -178,7 +157,6 @@ const MapPage = () => {
       });
     }
 
-    // Clean up function
     return () => {
       if (mapInstance) {
         // Don't remove the map when component unmounts
@@ -187,30 +165,23 @@ const MapPage = () => {
     };
   }, [mapboxToken, toast, mapInstance]);
 
-  // Update markers when disaster type changes or map loads
   useEffect(() => {
     if (!mapLoaded || !mapInstance) return;
 
-    // Clear existing markers
     const markers = document.querySelectorAll(".mapboxgl-marker");
     markers.forEach((marker) => marker.remove());
 
-    // Clear existing popups
     const popups = document.querySelectorAll(".mapboxgl-popup");
     popups.forEach((popup) => popup.remove());
 
     if (showRegions) {
-      // Create bounds object to fit map to markers
       const bounds = new window.mapboxgl.LngLatBounds();
       
-      // Add new markers based on the selected disaster
       const currentRegions = riskData[selectedDisaster as keyof typeof riskData].regions;
       
       currentRegions.forEach((region) => {
-        // Extend bounds with this coordinate
-        bounds.extend(region.coordinates);
+        bounds.extend([region.coordinates[0], region.coordinates[1]]);
 
-        // Create marker element
         const markerEl = document.createElement("div");
         markerEl.className = "relative";
         markerEl.innerHTML = `
@@ -220,12 +191,11 @@ const MapPage = () => {
           </div>
         `;
 
-        // Add popup
         const popup = new window.mapboxgl.Popup({
           closeButton: false,
           closeOnClick: false,
         })
-          .setLngLat(region.coordinates)
+          .setLngLat([region.coordinates[0], region.coordinates[1]])
           .setHTML(`
             <div class="p-2">
               <h3 class="font-bold">${region.name}</h3>
@@ -233,15 +203,13 @@ const MapPage = () => {
             </div>
           `);
 
-        // Add marker to map
         new window.mapboxgl.Marker(markerEl)
-          .setLngLat(region.coordinates)
+          .setLngLat([region.coordinates[0], region.coordinates[1]])
           .setPopup(popup)
           .addTo(mapInstance);
       });
 
-      // Only fit bounds if we have coordinates
-      if (!bounds.isEmpty()) {
+      if (bounds && !bounds._ne) {
         mapInstance.fitBounds(bounds, {
           padding: 50,
           maxZoom: 5
@@ -250,7 +218,6 @@ const MapPage = () => {
     }
   }, [selectedDisaster, showRegions, mapLoaded, mapInstance]);
   
-  // Handle search filtering
   useEffect(() => {
     if (!searchQuery) {
       setFilteredRegions([]);
@@ -267,17 +234,15 @@ const MapPage = () => {
     setFilteredRegions(filtered);
   }, [searchQuery, selectedDisaster]);
   
-  // Function to zoom to region
   const zoomToRegion = (coordinates: number[]) => {
     if (!mapInstance) return;
     
-    mapInstance.flyTo({
-      center: coordinates,
+    mapInstance.easeTo({
+      center: [coordinates[0], coordinates[1]],
       zoom: 5,
       essential: true
     });
     
-    // Clear search after zooming
     setSearchQuery("");
     setFilteredRegions([]);
   };
@@ -290,7 +255,6 @@ const MapPage = () => {
       </p>
 
       <div className="grid md:grid-cols-3 gap-6">
-        {/* Sidebar */}
         <div className="md:col-span-1 space-y-6">
           <Card>
             <CardHeader>
@@ -298,7 +262,6 @@ const MapPage = () => {
               <CardDescription>Select disaster type and display options</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Disaster Type Selector */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Disaster Type</label>
                 <Select
@@ -321,7 +284,6 @@ const MapPage = () => {
                 </Select>
               </div>
 
-              {/* Search Region */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Search Region</label>
                 <div className="relative">
@@ -335,7 +297,6 @@ const MapPage = () => {
                   <Search className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 </div>
                 
-                {/* Search Results */}
                 {filteredRegions.length > 0 && (
                   <div className="mt-2 bg-background border rounded-md shadow-sm max-h-60 overflow-y-auto">
                     <ul className="py-1">
@@ -355,7 +316,6 @@ const MapPage = () => {
                 )}
               </div>
 
-              {/* Display Options */}
               <div className="space-y-3 pt-4">
                 <h3 className="text-sm font-medium mb-2">Display Options</h3>
                 <div className="flex items-center justify-between">
@@ -382,7 +342,6 @@ const MapPage = () => {
             </CardContent>
           </Card>
 
-          {/* Risk Information */}
           <Card>
             <CardHeader>
               <CardTitle className="text-xl">Risk Information</CardTitle>
@@ -445,7 +404,6 @@ const MapPage = () => {
           </Card>
         </div>
 
-        {/* Map Container */}
         <div className="md:col-span-2">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <div className="flex justify-between items-center mb-4">
