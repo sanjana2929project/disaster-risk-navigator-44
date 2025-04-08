@@ -88,6 +88,7 @@ const MapPage = () => {
   const [mapboxToken, setMapboxToken] = useState<string>("pk.eyJ1IjoibG92ZWFibGVhaSIsImEiOiJjbGJhNjdudm0wMmt6M3BsZ3ZuMmh5cDZnIn0.QnPeO9xYn9Qyk9xjcVY7vA");
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredRegions, setFilteredRegions] = useState<Array<any>>([]);
+  const [showCountryImage, setShowCountryImage] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -116,37 +117,35 @@ const MapPage = () => {
         setMapLoaded(true);
         setMapInstance(map);
 
-        map.setFog({
-          color: "rgb(255, 255, 255)",
-          "high-color": "rgb(200, 200, 225)",
-          "horizon-blend": 0.2,
-        });
+        if (showCountryImage) {
+          map.setFog({
+            color: "rgb(255, 255, 255)",
+            "high-color": "rgb(200, 200, 225)",
+            "horizon-blend": 0.2,
+          });
+          
+          const countryImageContainer = document.createElement('div');
+          countryImageContainer.className = 'country-image-container';
+          countryImageContainer.style.position = 'absolute';
+          countryImageContainer.style.top = '50%';
+          countryImageContainer.style.left = '50%';
+          countryImageContainer.style.transform = 'translate(-50%, -50%)';
+          countryImageContainer.style.width = '500px';
+          countryImageContainer.style.height = '320px';
+          countryImageContainer.style.backgroundImage = 'url(/placeholder.svg)';
+          countryImageContainer.style.backgroundSize = 'cover';
+          countryImageContainer.style.backgroundPosition = 'center';
+          countryImageContainer.style.borderRadius = '8px';
+          countryImageContainer.style.opacity = '0.7';
+          countryImageContainer.style.pointerEvents = 'none';
+          
+          mapContainer.current.appendChild(countryImageContainer);
+        }
 
-        let userInteracting = false;
-        const rotationDegrees = 0.1;
-
-        const rotateGlobe = () => {
-          if (!map) return;
-          if (!userInteracting) {
-            const center = map.getCenter();
-            center.lng += rotationDegrees;
-            map.easeTo({
-              center,
-              duration: 100,
-              easing: (n) => n,
-            });
-          }
-          requestAnimationFrame(rotateGlobe);
-        };
-
-        map.on("mousedown", () => {
-          userInteracting = true;
-        });
-        map.on("mouseup", () => {
-          userInteracting = false;
-        });
-
-        rotateGlobe();
+        map.scrollZoom.disable();
+        map.dragPan.disable();
+        map.doubleClickZoom.disable();
+        map.touchZoomRotate.disable();
       });
     } catch (error) {
       console.error("Error initializing map:", error);
@@ -163,7 +162,7 @@ const MapPage = () => {
         // as we want to keep it for re-use
       }
     };
-  }, [mapboxToken, toast, mapInstance]);
+  }, [mapboxToken, toast, mapInstance, showCountryImage]);
 
   useEffect(() => {
     if (!mapLoaded || !mapInstance) return;
@@ -209,7 +208,7 @@ const MapPage = () => {
           .addTo(mapInstance);
       });
 
-      if (bounds && !bounds._ne) {
+      if (bounds && Object.keys(bounds).length > 0) {
         mapInstance.fitBounds(bounds, {
           padding: 50,
           maxZoom: 5

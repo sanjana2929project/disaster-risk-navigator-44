@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import {
   Card,
@@ -94,7 +95,7 @@ const getPrediction = (disasterType: DisasterType, country: string, state: strin
       "Kerala": 0.86, "Assam": 0.93, "West Bengal": 0.85, "Bihar": 0.84, "Odisha": 0.88,
       "Louisiana": 0.88, "Florida": 0.82, "Bangkok": 0.90, "Guangdong": 0.78, "Queensland": 0.75,
       "Sumatra": 0.80, "Mindanao": 0.75, "Java": 0.77, "Amazonas": 0.85, "Ganges Delta": 0.95,
-      "Mekong Delta": 0.92, "Mississippi Delta": 0.86, "Bangladesh": 0.95
+      "Mekong Delta": 0.92, "Mississippi Delta": 0.86
     },
     wildfire: {
       "California": 0.94, "Colorado": 0.85, "Oregon": 0.87, "New South Wales": 0.92, "Victoria": 0.90, 
@@ -105,7 +106,7 @@ const getPrediction = (disasterType: DisasterType, country: string, state: strin
     tsunami: {
       "Fukushima": 0.85, "Hawaii": 0.80, "Sumatra": 0.92, "Java": 0.90, "Chile Coast": 0.88,
       "Alaska": 0.78, "Okinawa": 0.82, "Philippines": 0.85, "Papua New Guinea": 0.87, 
-      "Tamil Nadu": 0.75, "Sri Lanka": 0.78, "Thailand Coast": 0.82, "Sumatra": 0.90,
+      "Tamil Nadu": 0.75, "Sri Lanka": 0.78, "Thailand Coast": 0.82,
       "Maldives": 0.80, "Somalia Coast": 0.74
     },
     cyclone: {
@@ -116,10 +117,29 @@ const getPrediction = (disasterType: DisasterType, country: string, state: strin
     }
   };
 
-  let score = Math.random() * 0.4 + 0.35;
+  // Default to a moderate risk score if location not found
+  let score = 0.5;
   
-  if (riskScores[disasterType][state]) {
-    score = riskScores[disasterType][state];
+  // If using custom location or if location not in our database
+  // Generate a risk score based on the disaster type and location name
+  if (country && state) {
+    const countryHash = country.length;
+    const stateHash = state.length;
+    const disasterFactor = 
+      disasterType === "earthquake" ? 0.7 :
+      disasterType === "flood" ? 0.6 :
+      disasterType === "wildfire" ? 0.65 :
+      disasterType === "tsunami" ? 0.55 :
+      0.62;
+      
+    // Create a pseudorandom but consistent score based on location and disaster type
+    const locationFactor = ((countryHash * 13 + stateHash * 7) % 50) / 100;
+    score = Math.min(0.95, Math.max(0.2, disasterFactor + locationFactor));
+    
+    // If we have specific data for this location, use it
+    if (riskScores[disasterType][state]) {
+      score = riskScores[disasterType][state];
+    }
   }
   
   let riskLevel: "Low" | "Moderate" | "High" | "Extreme";

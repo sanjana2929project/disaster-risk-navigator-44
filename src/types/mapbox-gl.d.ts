@@ -10,6 +10,18 @@ declare namespace mapboxgl {
       disable(): void;
       enable(): void;
     };
+    dragPan: {
+      disable(): void;
+      enable(): void;
+    };
+    doubleClickZoom: {
+      disable(): void;
+      enable(): void;
+    };
+    touchZoomRotate: {
+      disable(): void;
+      enable(): void;
+    };
     getZoom(): number;
     getCenter(): { lng: number; lat: number };
     setFog(options: any): void;
@@ -29,6 +41,14 @@ declare namespace mapboxgl {
     constructor(options?: any);
     setLngLat(coordinates: number[]): this;
     setHTML(html: string): this;
+    addTo(map: Map): this;
+    remove(): void;
+  }
+
+  export class Marker {
+    constructor(element?: HTMLElement);
+    setLngLat(coordinates: number[]): this;
+    setPopup(popup: Popup): this;
     addTo(map: Map): this;
     remove(): void;
   }
