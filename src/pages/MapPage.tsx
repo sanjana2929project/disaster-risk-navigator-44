@@ -1,15 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, BookOpen, Info, MapPin, FileText, Flame, Cloud, Waves, Wind, Search } from "lucide-react";
+import { BookOpen, Info, MapPin, FileText } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Switch } from "@/components/ui/switch";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 const riskData = {
   earthquake: {
@@ -71,180 +69,15 @@ const riskData = {
 };
 
 const disasterTypes = [
-  { value: "earthquake", label: "Earthquake", icon: <AlertTriangle className="h-4 w-4 text-danger" /> },
-  { value: "flood", label: "Flood", icon: <Cloud className="h-4 w-4 text-info" /> },
-  { value: "wildfire", label: "Wildfire", icon: <Flame className="h-4 w-4 text-warning" /> },
-  { value: "tsunami", label: "Tsunami", icon: <Waves className="h-4 w-4 text-primary" /> },
+  { value: "earthquake", label: "Earthquake", icon: <Info className="h-4 w-4 text-danger" /> },
+  { value: "flood", label: "Flood", icon: <Info className="h-4 w-4 text-info" /> },
+  { value: "wildfire", label: "Wildfire", icon: <Info className="h-4 w-4 text-warning" /> },
+  { value: "tsunami", label: "Tsunami", icon: <Info className="h-4 w-4 text-primary" /> },
 ];
 
 const MapPage = () => {
-  const mapContainer = useRef<HTMLDivElement>(null);
   const [selectedDisaster, setSelectedDisaster] = useState("earthquake");
   const [showRegions, setShowRegions] = useState(true);
-  const [showRiskZones, setShowRiskZones] = useState(true);
-  const [activeTab, setActiveTab] = useState("map");
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
-  const [mapboxToken, setMapboxToken] = useState<string>("pk.eyJ1IjoibG92ZWFibGVhaSIsImEiOiJjbGJhNjdudm0wMmt6M3BsZ3ZuMmh5cDZnIn0.QnPeO9xYn9Qyk9xjcVY7vA");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filteredRegions, setFilteredRegions] = useState<Array<any>>([]);
-  const [showCountryImage, setShowCountryImage] = useState(true);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    if (!mapContainer.current) return;
-    if (mapInstance) return; // Don't initialize if map already exists
-
-    try {
-      window.mapboxgl.accessToken = mapboxToken;
-      
-      const map = new window.mapboxgl.Map({
-        container: mapContainer.current,
-        style: "mapbox://styles/mapbox/light-v11",
-        zoom: 1.5,
-        center: [0, 20],
-        projection: "globe",
-      });
-
-      map.addControl(
-        new window.mapboxgl.NavigationControl({
-          visualizePitch: true,
-        }),
-        "top-right"
-      );
-
-      map.on("load", () => {
-        setMapLoaded(true);
-        setMapInstance(map);
-
-        if (showCountryImage) {
-          map.setFog({
-            color: "rgb(255, 255, 255)",
-            "high-color": "rgb(200, 200, 225)",
-            "horizon-blend": 0.2,
-          });
-          
-          const countryImageContainer = document.createElement('div');
-          countryImageContainer.className = 'country-image-container';
-          countryImageContainer.style.position = 'absolute';
-          countryImageContainer.style.top = '50%';
-          countryImageContainer.style.left = '50%';
-          countryImageContainer.style.transform = 'translate(-50%, -50%)';
-          countryImageContainer.style.width = '500px';
-          countryImageContainer.style.height = '320px';
-          countryImageContainer.style.backgroundImage = 'url(/placeholder.svg)';
-          countryImageContainer.style.backgroundSize = 'cover';
-          countryImageContainer.style.backgroundPosition = 'center';
-          countryImageContainer.style.borderRadius = '8px';
-          countryImageContainer.style.opacity = '0.7';
-          countryImageContainer.style.pointerEvents = 'none';
-          
-          mapContainer.current.appendChild(countryImageContainer);
-        }
-
-        map.scrollZoom.disable();
-        map.dragPan.disable();
-        map.doubleClickZoom.disable();
-        map.touchZoomRotate.disable();
-      });
-    } catch (error) {
-      console.error("Error initializing map:", error);
-      toast({
-        variant: "destructive",
-        title: "Map Error",
-        description: "Failed to initialize the map. Please try again later.",
-      });
-    }
-
-    return () => {
-      if (mapInstance) {
-        // Don't remove the map when component unmounts
-        // as we want to keep it for re-use
-      }
-    };
-  }, [mapboxToken, toast, mapInstance, showCountryImage]);
-
-  useEffect(() => {
-    if (!mapLoaded || !mapInstance) return;
-
-    const markers = document.querySelectorAll(".mapboxgl-marker");
-    markers.forEach((marker) => marker.remove());
-
-    const popups = document.querySelectorAll(".mapboxgl-popup");
-    popups.forEach((popup) => popup.remove());
-
-    if (showRegions) {
-      const bounds = new window.mapboxgl.LngLatBounds();
-      
-      const currentRegions = riskData[selectedDisaster as keyof typeof riskData].regions;
-      
-      currentRegions.forEach((region) => {
-        bounds.extend([region.coordinates[0], region.coordinates[1]]);
-
-        const markerEl = document.createElement("div");
-        markerEl.className = "relative";
-        markerEl.innerHTML = `
-          <div class="h-4 w-4 rounded-full absolute" 
-               style="background-color: ${riskData[selectedDisaster as keyof typeof riskData].color}; 
-                     transform: translate(-50%, -50%);">
-          </div>
-        `;
-
-        const popup = new window.mapboxgl.Popup({
-          closeButton: false,
-          closeOnClick: false,
-        })
-          .setLngLat([region.coordinates[0], region.coordinates[1]])
-          .setHTML(`
-            <div class="p-2">
-              <h3 class="font-bold">${region.name}</h3>
-              <p class="text-sm">Risk Level: ${region.risk}%</p>
-            </div>
-          `);
-
-        new window.mapboxgl.Marker(markerEl)
-          .setLngLat([region.coordinates[0], region.coordinates[1]])
-          .setPopup(popup)
-          .addTo(mapInstance);
-      });
-
-      if (bounds && Object.keys(bounds).length > 0) {
-        mapInstance.fitBounds(bounds, {
-          padding: 50,
-          maxZoom: 5
-        });
-      }
-    }
-  }, [selectedDisaster, showRegions, mapLoaded, mapInstance]);
-  
-  useEffect(() => {
-    if (!searchQuery) {
-      setFilteredRegions([]);
-      return;
-    }
-    
-    const query = searchQuery.toLowerCase();
-    const currentRegions = riskData[selectedDisaster as keyof typeof riskData].regions;
-    
-    const filtered = currentRegions.filter(region => 
-      region.name.toLowerCase().includes(query)
-    );
-    
-    setFilteredRegions(filtered);
-  }, [searchQuery, selectedDisaster]);
-  
-  const zoomToRegion = (coordinates: number[]) => {
-    if (!mapInstance) return;
-    
-    mapInstance.easeTo({
-      center: [coordinates[0], coordinates[1]],
-      zoom: 5,
-      essential: true
-    });
-    
-    setSearchQuery("");
-    setFilteredRegions([]);
-  };
 
   return (
     <div className="container py-8 px-4 max-w-6xl mx-auto">
@@ -257,7 +90,7 @@ const MapPage = () => {
         <div className="md:col-span-1 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">Map Controls</CardTitle>
+              <CardTitle className="text-xl">Display Settings</CardTitle>
               <CardDescription>Select disaster type and display options</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -283,38 +116,6 @@ const MapPage = () => {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Search Region</label>
-                <div className="relative">
-                  <Input
-                    type="text"
-                    placeholder="Type a region name..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pr-8"
-                  />
-                  <Search className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                </div>
-                
-                {filteredRegions.length > 0 && (
-                  <div className="mt-2 bg-background border rounded-md shadow-sm max-h-60 overflow-y-auto">
-                    <ul className="py-1">
-                      {filteredRegions.map((region, idx) => (
-                        <li 
-                          key={idx}
-                          className="px-3 py-2 hover:bg-accent cursor-pointer flex items-center gap-2"
-                          onClick={() => zoomToRegion(region.coordinates)}
-                        >
-                          <MapPin className="h-3 w-3 flex-shrink-0" /> 
-                          <span className="text-sm">{region.name}</span>
-                          <span className="ml-auto text-xs text-muted-foreground">{region.risk}%</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-
               <div className="space-y-3 pt-4">
                 <h3 className="text-sm font-medium mb-2">Display Options</h3>
                 <div className="flex items-center justify-between">
@@ -325,16 +126,6 @@ const MapPage = () => {
                     id="show-regions"
                     checked={showRegions}
                     onCheckedChange={setShowRegions}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <label htmlFor="show-risk-zones" className="text-sm">
-                    Show Risk Heat Map
-                  </label>
-                  <Switch
-                    id="show-risk-zones"
-                    checked={showRiskZones}
-                    onCheckedChange={setShowRiskZones}
                   />
                 </div>
               </div>
@@ -404,78 +195,48 @@ const MapPage = () => {
         </div>
 
         <div className="md:col-span-2">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="flex justify-between items-center mb-4">
-              <TabsList>
-                <TabsTrigger value="map" className="flex items-center gap-1">
-                  <MapPin className="h-4 w-4" />
-                  <span>Interactive Map</span>
-                </TabsTrigger>
-                <TabsTrigger value="data" className="flex items-center gap-1">
-                  <FileText className="h-4 w-4" />
-                  <span>Data View</span>
-                </TabsTrigger>
-              </TabsList>
-            </div>
-
-            <TabsContent value="map" className="space-y-4">
-              <Card>
-                <CardContent className="p-0 overflow-hidden h-[550px] rounded-md relative">
-                  {!mapLoaded && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-muted/50">
-                      <div className="text-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mx-auto mb-2"></div>
-                        <p className="text-sm text-muted-foreground">Loading map...</p>
-                      </div>
-                    </div>
-                  )}
-                  <div ref={mapContainer} className="absolute inset-0" />
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="data" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>High Risk Regions</CardTitle>
-                  <CardDescription>
-                    Regions with highest {disasterTypes.find((d) => d.value === selectedDisaster)?.label} risk
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {riskData[selectedDisaster as keyof typeof riskData].regions.map((region, i) => (
-                    <div key={i} className="mb-4">
-                      <div className="flex justify-between items-center mb-1">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="text-sm font-medium flex items-center gap-1 cursor-pointer" onClick={() => zoomToRegion(region.coordinates)}>
-                                <MapPin className="h-3 w-3" /> {region.name}
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>
-                                Coordinates: {region.coordinates[1].toFixed(2)}, {region.coordinates[0].toFixed(2)}
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                        <span className="text-sm font-bold">{region.risk}%</span>
-                      </div>
-                      <Progress
-                        value={region.risk}
-                        className="h-2"
-                        style={{
-                          backgroundColor: `${riskData[selectedDisaster as keyof typeof riskData].color}20`,
-                          "--progress-background": riskData[selectedDisaster as keyof typeof riskData].color
-                        } as React.CSSProperties}
-                      />
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>High Risk Regions</CardTitle>
+                <CardDescription>
+                  Regions with highest {disasterTypes.find((d) => d.value === selectedDisaster)?.label} risk
+                </CardDescription>
+              </div>
+              <FileText className="h-5 w-5 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {showRegions && riskData[selectedDisaster as keyof typeof riskData].regions.map((region, i) => (
+                <div key={i} className="mb-4">
+                  <div className="flex justify-between items-center mb-1">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-sm font-medium flex items-center gap-1 cursor-pointer">
+                            <MapPin className="h-3 w-3" /> {region.name}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>
+                            Coordinates: {region.coordinates[1].toFixed(2)}, {region.coordinates[0].toFixed(2)}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <span className="text-sm font-bold">{region.risk}%</span>
+                  </div>
+                  <Progress
+                    value={region.risk}
+                    className="h-2"
+                    style={{
+                      backgroundColor: `${riskData[selectedDisaster as keyof typeof riskData].color}20`,
+                      "--progress-background": riskData[selectedDisaster as keyof typeof riskData].color
+                    } as React.CSSProperties}
+                  />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
