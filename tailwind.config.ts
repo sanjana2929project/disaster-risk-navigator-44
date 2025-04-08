@@ -170,6 +170,6 @@ export default {
 	},
 	plugins: [
 		require("tailwindcss-animate"),
-		fluidTypography()
+		fluidTypography
 	],
 } satisfies Config;
