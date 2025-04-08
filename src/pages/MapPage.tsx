@@ -81,7 +81,7 @@ const MapPage = () => {
 
   return (
     <div className="container py-8 px-4 max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Risk Map</h1>
+      <h1 className="text-3xl font-bold mb-6">Risks</h1>
       <p className="text-muted-foreground mb-8">
         Explore areas with high risk for different types of disasters around the world.
       </p>
