@@ -4,13 +4,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, BookOpen, Info, MapPin, FileText, Flame, Cloud, Waves, Wind } from "lucide-react";
+import { AlertTriangle, BookOpen, Info, MapPin, FileText, Flame, Cloud, Waves, Wind, Search } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
-// Global object to store the map
-let map: mapboxgl.Map | null = null;
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/use-toast";
 
 // Risk data for different disasters
 const riskData = {
@@ -21,6 +20,10 @@ const riskData = {
       { name: "Mexico City", coordinates: [-99.1332, 19.4326], risk: 75 },
       { name: "Istanbul", coordinates: [28.9784, 41.0082], risk: 80 },
       { name: "Kathmandu", coordinates: [85.3240, 27.7172], risk: 82 },
+      { name: "Los Angeles", coordinates: [-118.2437, 34.0522], risk: 80 },
+      { name: "Seattle", coordinates: [-122.3321, 47.6062], risk: 70 },
+      { name: "Lima", coordinates: [-77.0428, -12.0464], risk: 78 },
+      { name: "Wellington", coordinates: [174.7787, -41.2924], risk: 75 },
     ],
     color: "#e74c3c",
   },
@@ -31,6 +34,10 @@ const riskData = {
       { name: "Mumbai", coordinates: [72.8777, 19.0760], risk: 80 },
       { name: "Bangladesh", coordinates: [90.3563, 23.6850], risk: 90 },
       { name: "Jakarta", coordinates: [106.8456, -6.2088], risk: 82 },
+      { name: "Houston", coordinates: [-95.3698, 29.7604], risk: 75 },
+      { name: "Venice", coordinates: [12.3155, 45.4408], risk: 78 },
+      { name: "Manila", coordinates: [120.9842, 14.5995], risk: 83 },
+      { name: "Chennai", coordinates: [80.2707, 13.0827], risk: 79 },
     ],
     color: "#3498db",
   },
@@ -41,6 +48,10 @@ const riskData = {
       { name: "Portugal", coordinates: [-8.2245, 39.3999], risk: 75 },
       { name: "Greece", coordinates: [21.8243, 39.0742], risk: 78 },
       { name: "Canada", coordinates: [-106.3468, 56.1304], risk: 72 },
+      { name: "Colorado", coordinates: [-105.7821, 39.5501], risk: 80 },
+      { name: "Spain", coordinates: [-3.7492, 40.4637], risk: 77 },
+      { name: "Arizona", coordinates: [-111.0937, 34.0489], risk: 85 },
+      { name: "Siberia", coordinates: [99.1967, 61.0137], risk: 70 },
     ],
     color: "#e67e22",
   },
@@ -51,6 +62,10 @@ const riskData = {
       { name: "Chile", coordinates: [-71.5430, -35.6751], risk: 85 },
       { name: "Hawaii", coordinates: [-155.5828, 19.8968], risk: 80 },
       { name: "Alaska", coordinates: [-149.4937, 64.2008], risk: 75 },
+      { name: "Philippines", coordinates: [121.7740, 12.8797], risk: 83 },
+      { name: "Thailand", coordinates: [100.9925, 15.8700], risk: 75 },
+      { name: "Sri Lanka", coordinates: [80.7718, 7.8731], risk: 70 },
+      { name: "New Zealand", coordinates: [171.7799, -41.2865], risk: 78 },
     ],
     color: "#9b59b6",
   },
@@ -70,17 +85,34 @@ const MapPage = () => {
   const [showRiskZones, setShowRiskZones] = useState(true);
   const [activeTab, setActiveTab] = useState("map");
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
+  const [mapboxToken, setMapboxToken] = useState<string>("pk.eyJ1IjoibG92ZWFibGVhaSIsImEiOiJjbGJhNjdudm0wMmt6M3BsZ3ZuMmh5cDZnIn0.QnPeO9xYn9Qyk9xjcVY7vA");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredRegions, setFilteredRegions] = useState<Array<any>>([]);
+  const { toast } = useToast();
 
   // Initialize map
   useEffect(() => {
     if (!mapContainer.current) return;
+    if (mapInstance) return; // Don't initialize if map already exists
 
-    // Only initialize the map if it hasn't been created yet
-    if (!map) {
-      // Use window.mapboxgl to access the global MapboxGL instance
-      window.mapboxgl.accessToken = "pk.eyJ1IjoibG92ZWFibGVhaSIsImEiOiJjbGJhNjdudm0wMmt6M3BsZ3ZuMmh5cDZnIn0.QnPeO9xYn9Qyk9xjcVY7vA";
+    // Use mapboxgl from window
+    if (!window.mapboxgl) {
+      console.error("Mapbox GL JS is not loaded. Make sure the script is included.");
+      toast({
+        variant: "destructive",
+        title: "Map Error",
+        description: "Could not load map library. Please try refreshing the page.",
+      });
+      return;
+    }
+
+    try {
+      // Set access token
+      window.mapboxgl.accessToken = mapboxToken;
       
-      map = new window.mapboxgl.Map({
+      // Create new map instance
+      const map = new window.mapboxgl.Map({
         container: mapContainer.current,
         style: "mapbox://styles/mapbox/light-v11",
         zoom: 1.5,
@@ -99,6 +131,7 @@ const MapPage = () => {
       // Wait for map to load
       map.on("load", () => {
         setMapLoaded(true);
+        setMapInstance(map);
 
         // Add atmosphere and fog effects for 3D globe appearance
         map.setFog({
@@ -108,22 +141,9 @@ const MapPage = () => {
         });
 
         // Start globe rotation animation
-        startGlobeRotation();
-      });
-
-      // Enable user interaction tracking
-      let userInteracting = false;
-      map.on("mousedown", () => {
-        userInteracting = true;
-      });
-      map.on("mouseup", () => {
-        userInteracting = false;
-      });
-
-      // Function to rotate the globe
-      const startGlobeRotation = () => {
-        if (!map) return;
+        let userInteracting = false;
         const rotationDegrees = 0.1;
+
         const rotateGlobe = () => {
           if (!map) return;
           // Only rotate if user is not interacting
@@ -138,46 +158,70 @@ const MapPage = () => {
           }
           requestAnimationFrame(rotateGlobe);
         };
+
+        // Track user interaction
+        map.on("mousedown", () => {
+          userInteracting = true;
+        });
+        map.on("mouseup", () => {
+          userInteracting = false;
+        });
+
         rotateGlobe();
-      };
+      });
+    } catch (error) {
+      console.error("Error initializing map:", error);
+      toast({
+        variant: "destructive",
+        title: "Map Error",
+        description: "Failed to initialize the map. Please try again later.",
+      });
     }
 
     // Clean up function
     return () => {
-      // Don't remove the map when component unmounts
-      // as we want to keep it for re-use
+      if (mapInstance) {
+        // Don't remove the map when component unmounts
+        // as we want to keep it for re-use
+      }
     };
-  }, []);
+  }, [mapboxToken, toast, mapInstance]);
 
   // Update markers when disaster type changes or map loads
   useEffect(() => {
-    if (!mapLoaded || !map) return;
-
-    // Create bounds object to fit map to markers
-    const bounds = new window.mapboxgl.LngLatBounds();
+    if (!mapLoaded || !mapInstance) return;
 
     // Clear existing markers
     const markers = document.querySelectorAll(".mapboxgl-marker");
     markers.forEach((marker) => marker.remove());
 
-    // Add new markers based on the selected disaster
+    // Clear existing popups
+    const popups = document.querySelectorAll(".mapboxgl-popup");
+    popups.forEach((popup) => popup.remove());
+
     if (showRegions) {
-      riskData[selectedDisaster as keyof typeof riskData].regions.forEach((region) => {
-        // Extend bounds
+      // Create bounds object to fit map to markers
+      const bounds = new window.mapboxgl.LngLatBounds();
+      
+      // Add new markers based on the selected disaster
+      const currentRegions = riskData[selectedDisaster as keyof typeof riskData].regions;
+      
+      currentRegions.forEach((region) => {
+        // Extend bounds with this coordinate
         bounds.extend(region.coordinates);
 
-        // Create marker
-        const markerElement = document.createElement("div");
-        markerElement.className = "flex flex-col items-center";
+        // Create marker element
+        const markerEl = document.createElement("div");
+        markerEl.className = "relative";
+        markerEl.innerHTML = `
+          <div class="h-4 w-4 rounded-full absolute" 
+               style="background-color: ${riskData[selectedDisaster as keyof typeof riskData].color}; 
+                     transform: translate(-50%, -50%);">
+          </div>
+        `;
 
-        // Marker dot
-        const dot = document.createElement("div");
-        dot.className = "h-4 w-4 rounded-full";
-        dot.style.backgroundColor = riskData[selectedDisaster as keyof typeof riskData].color;
-        markerElement.appendChild(dot);
-
-        // Add marker to map
-        new window.mapboxgl.Popup({
+        // Add popup
+        const popup = new window.mapboxgl.Popup({
           closeButton: false,
           closeOnClick: false,
         })
@@ -187,16 +231,56 @@ const MapPage = () => {
               <h3 class="font-bold">${region.name}</h3>
               <p class="text-sm">Risk Level: ${region.risk}%</p>
             </div>
-          `)
-          .addTo(map);
+          `);
+
+        // Add marker to map
+        new window.mapboxgl.Marker(markerEl)
+          .setLngLat(region.coordinates)
+          .setPopup(popup)
+          .addTo(mapInstance);
       });
 
-      // Fit map to markers
-      map.fitBounds(bounds, {
-        padding: 50
-      });
+      // Only fit bounds if we have coordinates
+      if (!bounds.isEmpty()) {
+        mapInstance.fitBounds(bounds, {
+          padding: 50,
+          maxZoom: 5
+        });
+      }
     }
-  }, [selectedDisaster, showRegions, mapLoaded]);
+  }, [selectedDisaster, showRegions, mapLoaded, mapInstance]);
+  
+  // Handle search filtering
+  useEffect(() => {
+    if (!searchQuery) {
+      setFilteredRegions([]);
+      return;
+    }
+    
+    const query = searchQuery.toLowerCase();
+    const currentRegions = riskData[selectedDisaster as keyof typeof riskData].regions;
+    
+    const filtered = currentRegions.filter(region => 
+      region.name.toLowerCase().includes(query)
+    );
+    
+    setFilteredRegions(filtered);
+  }, [searchQuery, selectedDisaster]);
+  
+  // Function to zoom to region
+  const zoomToRegion = (coordinates: number[]) => {
+    if (!mapInstance) return;
+    
+    mapInstance.flyTo({
+      center: coordinates,
+      zoom: 5,
+      essential: true
+    });
+    
+    // Clear search after zooming
+    setSearchQuery("");
+    setFilteredRegions([]);
+  };
 
   return (
     <div className="container py-8 px-4 max-w-6xl mx-auto">
@@ -235,6 +319,40 @@ const MapPage = () => {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Search Region */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Search Region</label>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="Type a region name..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pr-8"
+                  />
+                  <Search className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                </div>
+                
+                {/* Search Results */}
+                {filteredRegions.length > 0 && (
+                  <div className="mt-2 bg-background border rounded-md shadow-sm max-h-60 overflow-y-auto">
+                    <ul className="py-1">
+                      {filteredRegions.map((region, idx) => (
+                        <li 
+                          key={idx}
+                          className="px-3 py-2 hover:bg-accent cursor-pointer flex items-center gap-2"
+                          onClick={() => zoomToRegion(region.coordinates)}
+                        >
+                          <MapPin className="h-3 w-3 flex-shrink-0" /> 
+                          <span className="text-sm">{region.name}</span>
+                          <span className="ml-auto text-xs text-muted-foreground">{region.risk}%</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
 
               {/* Display Options */}
@@ -346,6 +464,14 @@ const MapPage = () => {
             <TabsContent value="map" className="space-y-4">
               <Card>
                 <CardContent className="p-0 overflow-hidden h-[550px] rounded-md relative">
+                  {!mapLoaded && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-muted/50">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mx-auto mb-2"></div>
+                        <p className="text-sm text-muted-foreground">Loading map...</p>
+                      </div>
+                    </div>
+                  )}
                   <div ref={mapContainer} className="absolute inset-0" />
                 </CardContent>
               </Card>
@@ -366,7 +492,7 @@ const MapPage = () => {
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <span className="text-sm font-medium flex items-center gap-1">
+                              <span className="text-sm font-medium flex items-center gap-1 cursor-pointer" onClick={() => zoomToRegion(region.coordinates)}>
                                 <MapPin className="h-3 w-3" /> {region.name}
                               </span>
                             </TooltipTrigger>
@@ -384,7 +510,8 @@ const MapPage = () => {
                         className="h-2"
                         style={{
                           backgroundColor: `${riskData[selectedDisaster as keyof typeof riskData].color}20`,
-                        }}
+                          "--progress-background": riskData[selectedDisaster as keyof typeof riskData].color
+                        } as React.CSSProperties}
                       />
                     </div>
                   ))}

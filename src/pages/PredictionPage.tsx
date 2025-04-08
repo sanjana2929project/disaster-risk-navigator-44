@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   AlertCircle,
   CloudRain,
@@ -54,53 +55,69 @@ const countries = [
   "Mexico",
   "Italy",
   "Australia",
-  "New Zealand"
+  "New Zealand",
+  "Canada",
+  "Brazil",
+  "Thailand",
+  "Turkey",
+  "Chile"
 ];
 
-// Sample states for each country
 const statesByCountry: Record<string, string[]> = {
-  "India": ["Gujarat", "Tamil Nadu", "Maharashtra", "Kerala", "Assam", "Odisha"],
-  "United States": ["California", "Florida", "Texas", "Hawaii", "Washington", "Oregon"],
-  "Japan": ["Tokyo", "Miyagi", "Fukushima", "Hokkaido", "Okinawa"],
-  "Indonesia": ["Java", "Sumatra", "Sulawesi", "Bali", "Papua"],
-  "Philippines": ["Luzon", "Visayas", "Mindanao"],
-  "China": ["Sichuan", "Yunnan", "Guangdong", "Fujian", "Hainan"],
-  "Mexico": ["Oaxaca", "Chiapas", "Guerrero", "Michoacán", "Colima"],
-  "Italy": ["Sicily", "Calabria", "Campania", "Lazio", "Emilia-Romagna"],
-  "Australia": ["Queensland", "New South Wales", "Western Australia", "Victoria", "Northern Territory"],
-  "New Zealand": ["Canterbury", "Wellington", "Otago", "Hawke's Bay", "Bay of Plenty"]
+  "India": ["Gujarat", "Tamil Nadu", "Maharashtra", "Kerala", "Assam", "Odisha", "West Bengal", "Karnataka", "Andhra Pradesh"],
+  "United States": ["California", "Florida", "Texas", "Hawaii", "Washington", "Oregon", "Alaska", "Louisiana", "New York", "Colorado"],
+  "Japan": ["Tokyo", "Miyagi", "Fukushima", "Hokkaido", "Okinawa", "Kyoto", "Osaka", "Kobe", "Nagano"],
+  "Indonesia": ["Java", "Sumatra", "Sulawesi", "Bali", "Papua", "Borneo", "Maluku", "Flores", "Lombok"],
+  "Philippines": ["Luzon", "Visayas", "Mindanao", "Palawan", "Cebu", "Leyte", "Samar", "Mindoro"],
+  "China": ["Sichuan", "Yunnan", "Guangdong", "Fujian", "Hainan", "Tibet", "Shanghai", "Beijing", "Hebei"],
+  "Mexico": ["Oaxaca", "Chiapas", "Guerrero", "Michoacán", "Colima", "Jalisco", "Veracruz", "Baja California"],
+  "Italy": ["Sicily", "Calabria", "Campania", "Lazio", "Emilia-Romagna", "Tuscany", "Lombardy", "Veneto"],
+  "Australia": ["Queensland", "New South Wales", "Western Australia", "Victoria", "Northern Territory", "South Australia", "Tasmania"],
+  "New Zealand": ["Canterbury", "Wellington", "Otago", "Hawke's Bay", "Bay of Plenty", "Auckland", "Northland", "Marlborough"],
+  "Canada": ["British Columbia", "Alberta", "Ontario", "Quebec", "Nova Scotia", "Manitoba", "Saskatchewan"],
+  "Brazil": ["Amazonas", "São Paulo", "Rio de Janeiro", "Santa Catarina", "Minas Gerais", "Bahia"],
+  "Thailand": ["Bangkok", "Phuket", "Chiang Mai", "Krabi", "Phang Nga", "Surat Thani"],
+  "Turkey": ["Istanbul", "Izmir", "Antalya", "Ankara", "Van", "Erzurum", "Konya"],
+  "Chile": ["Santiago", "Valparaíso", "Biobío", "Maule", "Los Lagos", "Antofagasta"]
 };
 
-// Mock prediction function
 const getPrediction = (disasterType: DisasterType, country: string, state: string): PredictionResult => {
-  // This would be replaced with actual model predictions
   const riskScores: Record<DisasterType, Record<string, number>> = {
     earthquake: {
-      "California": 0.85, "Tokyo": 0.9, "Gujarat": 0.7, "Java": 0.8, "Miyagi": 0.85,
-      "Sichuan": 0.8, "Oaxaca": 0.75, "Sicily": 0.65, "Wellington": 0.75, "Canterbury": 0.7
+      "California": 0.92, "Washington": 0.75, "Oregon": 0.78, "Alaska": 0.88, "Hawaii": 0.70,
+      "Tokyo": 0.90, "Miyagi": 0.85, "Fukushima": 0.84, "Hokkaido": 0.80, "Osaka": 0.83, 
+      "Gujarat": 0.78, "Java": 0.89, "Sumatra": 0.86, "Sichuan": 0.87, "Oaxaca": 0.85, 
+      "Sicily": 0.72, "Wellington": 0.84, "Canterbury": 0.80, "Istanbul": 0.89, "Valparaíso": 0.76,
+      "Santiago": 0.79, "Yunnan": 0.82
     },
     flood: {
-      "Kerala": 0.8, "Assam": 0.9, "Florida": 0.75, "Guangdong": 0.7, "Queensland": 0.65,
-      "Sumatra": 0.75, "Mindanao": 0.7, "Hokkaido": 0.5, "Texas": 0.6, "Odisha": 0.8
+      "Kerala": 0.86, "Assam": 0.93, "West Bengal": 0.85, "Bihar": 0.84, "Odisha": 0.88,
+      "Louisiana": 0.88, "Florida": 0.82, "Bangkok": 0.90, "Guangdong": 0.78, "Queensland": 0.75,
+      "Sumatra": 0.80, "Mindanao": 0.75, "Java": 0.77, "Amazonas": 0.85, "Ganges Delta": 0.95,
+      "Mekong Delta": 0.92, "Mississippi Delta": 0.86, "Bangladesh": 0.95
     },
     wildfire: {
-      "California": 0.9, "New South Wales": 0.85, "Sumatra": 0.7, "Michoacán": 0.65,
-      "Oregon": 0.8, "Sardinia": 0.75, "Victoria": 0.8, "Hawke's Bay": 0.6, "Yunnan": 0.5
+      "California": 0.94, "Colorado": 0.85, "Oregon": 0.87, "New South Wales": 0.92, "Victoria": 0.90, 
+      "Western Australia": 0.84, "Northern Territory": 0.82,
+      "Amazonas": 0.80, "Mediterranean Coast": 0.83, "Greece": 0.81, "Portugal": 0.78, "Spain": 0.82,
+      "Siberia": 0.76, "British Columbia": 0.82, "Alberta": 0.78
     },
     tsunami: {
-      "Fukushima": 0.8, "Hawaii": 0.7, "Tamil Nadu": 0.65, "Sumatra": 0.85, "Mindanao": 0.75,
-      "Hokkaido": 0.7, "Okinawa": 0.75, "Calabria": 0.6, "Bay of Plenty": 0.65, "Papua": 0.7
+      "Fukushima": 0.85, "Hawaii": 0.80, "Sumatra": 0.92, "Java": 0.90, "Chile Coast": 0.88,
+      "Alaska": 0.78, "Okinawa": 0.82, "Philippines": 0.85, "Papua New Guinea": 0.87, 
+      "Tamil Nadu": 0.75, "Sri Lanka": 0.78, "Thailand Coast": 0.82, "Sumatra": 0.90,
+      "Maldives": 0.80, "Somalia Coast": 0.74
     },
     cyclone: {
-      "Odisha": 0.85, "Florida": 0.8, "Queensland": 0.75, "Guangdong": 0.7, "Visayas": 0.85,
-      "Luzon": 0.8, "Hainan": 0.75, "Okinawa": 0.7, "Fujian": 0.65, "Tamil Nadu": 0.75
+      "Odisha": 0.90, "West Bengal": 0.87, "Bangladesh": 0.92, "Queensland": 0.85, 
+      "Guangdong": 0.82, "Visayas": 0.88, "Luzon": 0.83, "Hainan": 0.80,
+      "Florida": 0.88, "Louisiana": 0.84, "Texas": 0.80, "North Carolina": 0.78,
+      "Caribbean Islands": 0.90, "Mozambique": 0.87, "Madagascar": 0.89
     }
   };
 
-  // Default score if specific state isn't found
-  let score = Math.random() * 0.6 + 0.2; // Random score between 0.2 and 0.8
+  let score = Math.random() * 0.4 + 0.35;
   
-  // Use specific score if available
   if (riskScores[disasterType][state]) {
     score = riskScores[disasterType][state];
   }
@@ -132,61 +149,178 @@ const getPrediction = (disasterType: DisasterType, country: string, state: strin
   };
 };
 
-// Get recommendations based on disaster type and risk level
 const getRecommendations = (disasterType: DisasterType, riskLevel: string): string[] => {
-  const baseRecommendations: Record<DisasterType, string[]> = {
-    earthquake: [
-      "Secure heavy furniture and appliances to walls",
-      "Create an emergency communication plan",
-      "Identify safe places in each room (under sturdy furniture, against interior walls)",
-      "Keep an emergency kit with first aid supplies, food, and water"
-    ],
-    flood: [
-      "Elevate electrical systems and valuables",
-      "Install check valves in plumbing",
-      "Waterproof your basement",
-      "Know evacuation routes and have emergency supplies ready"
-    ],
-    wildfire: [
-      "Create a defensible space around your home",
-      "Use fire-resistant materials for construction and landscaping",
-      "Keep gutters and roof clear of debris",
-      "Have an evacuation plan and emergency kit ready"
-    ],
-    tsunami: [
-      "Know the tsunami warning signs and evacuation routes",
-      "Move to higher ground immediately if warned",
-      "Stay away from the coast during warnings",
-      "Have an emergency kit prepared"
-    ],
-    cyclone: [
-      "Reinforce doors, windows, and roof",
-      "Trim trees and branches near your home",
-      "Prepare a storm shelter or identify sturdy interior rooms",
-      "Stock emergency supplies including water and non-perishable food"
-    ]
+  const baseRecommendations: Record<DisasterType, Record<string, string[]>> = {
+    earthquake: {
+      "Low": [
+        "Be familiar with emergency procedures",
+        "Have basic emergency supplies on hand",
+        "Know how to shut off utilities if necessary"
+      ],
+      "Moderate": [
+        "Secure heavy furniture and appliances to walls",
+        "Create a family emergency communication plan",
+        "Keep emergency supplies accessible",
+        "Practice drop, cover, and hold on drills"
+      ],
+      "High": [
+        "Secure all heavy furniture, appliances and wall hangings",
+        "Identify safe spots in each room (under sturdy tables, against interior walls)",
+        "Prepare a comprehensive emergency kit with supplies for at least 72 hours",
+        "Have a detailed evacuation plan with multiple routes"
+      ],
+      "Extreme": [
+        "Retrofit your home for earthquake safety if possible",
+        "Secure all heavy items and install automatic gas shutoff valves",
+        "Maintain emergency supplies for at least one week",
+        "Establish multiple evacuation routes and communication plans",
+        "Consider earthquake insurance coverage"
+      ]
+    },
+    flood: {
+      "Low": [
+        "Be aware of flood zones in your area",
+        "Keep gutters and drains clear of debris",
+        "Have a basic emergency kit ready"
+      ],
+      "Moderate": [
+        "Elevate electrical systems and appliances above potential flood levels",
+        "Install check valves in plumbing to prevent backups",
+        "Keep important documents in waterproof containers",
+        "Know evacuation routes from your area"
+      ],
+      "High": [
+        "Consider flood-proofing measures for your home",
+        "Have sandbags or flood barriers ready for deployment",
+        "Create a detailed evacuation plan with multiple routes",
+        "Store emergency supplies on upper levels of your home"
+      ],
+      "Extreme": [
+        "Consider relocating to higher ground if possible",
+        "Install permanent water barriers or home elevation systems",
+        "Maintain comprehensive flood insurance",
+        "Have emergency supplies for at least one week",
+        "Be prepared to evacuate quickly when warnings are issued"
+      ]
+    },
+    wildfire: {
+      "Low": [
+        "Clear leaves and debris from gutters and roofs",
+        "Be cautious with outdoor burning and tools that can create sparks",
+        "Keep a basic emergency kit on hand"
+      ],
+      "Moderate": [
+        "Create a defensible space around your home by clearing vegetation",
+        "Use fire-resistant materials for home repairs or renovations",
+        "Have an evacuation plan ready for your household",
+        "Keep garden hoses accessible and consider installing exterior sprinklers"
+      ],
+      "High": [
+        "Maintain a substantial defensible space (30-100 feet) around structures",
+        "Use fire-resistant building materials for your home's exterior",
+        "Keep emergency supplies packed and ready for evacuation",
+        "Install ember-resistant vents and cover eaves"
+      ],
+      "Extreme": [
+        "Consider fire-resistant retrofitting for your entire home",
+        "Maintain maximum possible defensible space around your property",
+        "Have evacuation plans with multiple routes to higher ground",
+        "Install exterior sprinkler systems or consider fire shields",
+        "Be prepared to evacuate early when fire danger is high"
+      ]
+    },
+    tsunami: {
+      "Low": [
+        "Be familiar with tsunami evacuation routes",
+        "Have a basic emergency kit ready",
+        "Understand tsunami warning signs like strong earthquakes"
+      ],
+      "Moderate": [
+        "Know natural tsunami warning signs (ground shaking, unusual ocean behavior)",
+        "Identify evacuation routes to higher ground or inland areas",
+        "Create a family emergency communication plan",
+        "Keep emergency supplies ready at home and in vehicles"
+      ],
+      "High": [
+        "Have evacuation plans with multiple routes to higher ground",
+        "Keep emergency supplies in an easy-to-grab container",
+        "Know the difference between tsunami watches and warnings",
+        "Consider vertical evacuation options if immediate high ground is not accessible"
+      ],
+      "Extreme": [
+        "Consider relocating to higher ground or further inland if possible",
+        "Have emergency supplies stored at home, work, and in vehicles",
+        "Practice tsunami evacuation routes regularly",
+        "Be prepared to evacuate immediately after feeling strong ground shaking",
+        "Install NOAA Weather Radio for alerts"
+      ]
+    },
+    cyclone: {
+      "Low": [
+        "Be aware of hurricane/cyclone season in your area",
+        "Keep trees trimmed away from structures",
+        "Have a basic emergency kit ready"
+      ],
+      "Moderate": [
+        "Have materials ready to protect windows (plywood, shutters)",
+        "Create a family emergency communication plan",
+        "Identify potential shelter locations",
+        "Keep important documents in waterproof containers"
+      ],
+      "High": [
+        "Install permanent storm shutters or have plywood cut to size",
+        "Reinforce doors, garage doors, and roof connections",
+        "Create a detailed evacuation plan with multiple routes",
+        "Have emergency supplies for at least 72 hours"
+      ],
+      "Extreme": [
+        "Consider structural improvements like roof straps and reinforced foundations",
+        "Install impact-resistant windows or permanent shutters",
+        "Have comprehensive emergency supplies for at least one week",
+        "Be prepared to evacuate early when warnings are issued",
+        "Consider hurricane insurance coverage"
+      ]
+    }
   };
   
-  // Return all recommendations for the disaster type
-  return baseRecommendations[disasterType];
+  return baseRecommendations[disasterType][riskLevel] || baseRecommendations[disasterType]["Moderate"];
 };
 
 const PredictionPage = () => {
   const [selectedDisaster, setSelectedDisaster] = useState<DisasterType | null>(null);
   const [selectedCountry, setSelectedCountry] = useState<string>("");
   const [selectedState, setSelectedState] = useState<string>("");
+  const [customCountry, setCustomCountry] = useState<string>("");
+  const [customState, setCustomState] = useState<string>("");
+  const [useCustomLocation, setUseCustomLocation] = useState<boolean>(false);
   const [prediction, setPrediction] = useState<PredictionResult | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handlePredict = () => {
-    if (selectedDisaster && selectedCountry && selectedState) {
+    if (selectedDisaster) {
+      const country = useCustomLocation ? customCountry : selectedCountry;
+      const state = useCustomLocation ? customState : selectedState;
+      
+      if (!country || !state) {
+        return;
+      }
+      
       setLoading(true);
-      // Simulate API call
       setTimeout(() => {
-        const result = getPrediction(selectedDisaster, selectedCountry, selectedState);
+        const result = getPrediction(selectedDisaster, country, state);
         setPrediction(result);
         setLoading(false);
       }, 1500);
+    }
+  };
+
+  const isFormValid = () => {
+    if (!selectedDisaster) return false;
+    
+    if (useCustomLocation) {
+      return !!customCountry && !!customState;
+    } else {
+      return !!selectedCountry && !!selectedState;
     }
   };
 
@@ -234,54 +368,96 @@ const PredictionPage = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="country">Country</Label>
-                      <Select
-                        value={selectedCountry}
-                        onValueChange={(value) => {
-                          setSelectedCountry(value);
-                          setSelectedState("");
-                        }}
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <Button 
+                        variant={useCustomLocation ? "outline" : "default"} 
+                        size="sm"
+                        onClick={() => setUseCustomLocation(false)}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a country" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {countries.map((country) => (
-                            <SelectItem key={country} value={country}>
-                              {country}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        Select from list
+                      </Button>
+                      <Button 
+                        variant={useCustomLocation ? "default" : "outline"} 
+                        size="sm"
+                        onClick={() => setUseCustomLocation(true)}
+                      >
+                        Enter custom location
+                      </Button>
                     </div>
+                    
+                    {!useCustomLocation ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="country">Country</Label>
+                          <Select
+                            value={selectedCountry}
+                            onValueChange={(value) => {
+                              setSelectedCountry(value);
+                              setSelectedState("");
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a country" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {countries.map((country) => (
+                                <SelectItem key={country} value={country}>
+                                  {country}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="state">State/Region</Label>
-                      <Select
-                        value={selectedState}
-                        onValueChange={setSelectedState}
-                        disabled={!selectedCountry}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a state/region" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {selectedCountry &&
-                            statesByCountry[selectedCountry]?.map((state) => (
-                              <SelectItem key={state} value={state}>
-                                {state}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="state">State/Region</Label>
+                          <Select
+                            value={selectedState}
+                            onValueChange={setSelectedState}
+                            disabled={!selectedCountry}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a state/region" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {selectedCountry &&
+                                statesByCountry[selectedCountry]?.map((state) => (
+                                  <SelectItem key={state} value={state}>
+                                    {state}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="custom-country">Country</Label>
+                          <Input
+                            id="custom-country"
+                            placeholder="Enter country name"
+                            value={customCountry}
+                            onChange={(e) => setCustomCountry(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="custom-state">State/Region</Label>
+                          <Input
+                            id="custom-state"
+                            placeholder="Enter state or region name"
+                            value={customState}
+                            onChange={(e) => setCustomState(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <Button
                     onClick={handlePredict}
-                    disabled={!selectedDisaster || !selectedCountry || !selectedState || loading}
+                    disabled={!isFormValid() || loading}
                     className="w-full mt-4"
                   >
                     {loading ? "Analyzing..." : "Predict Risk"}
@@ -292,7 +468,9 @@ const PredictionPage = () => {
                 {prediction && (
                   <div className="space-y-6 mt-4">
                     <div className="text-center">
-                      <h3 className="text-xl font-bold mb-2">Risk Assessment for {selectedState}, {selectedCountry}</h3>
+                      <h3 className="text-xl font-bold mb-2">
+                        Risk Assessment for {useCustomLocation ? customState : selectedState}, {useCustomLocation ? customCountry : selectedCountry}
+                      </h3>
                       <p className="text-muted-foreground">
                         Based on historical data, environmental factors, and predictive modeling
                       </p>
@@ -342,13 +520,15 @@ const PredictionPage = () => {
                       </ul>
                     </div>
 
-                    <div className="flex justify-center mt-6">
+                    <div className="flex flex-wrap justify-center gap-3 mt-6">
                       <Button onClick={() => {
                         setSelectedDisaster(null);
                         setSelectedCountry("");
                         setSelectedState("");
+                        setCustomCountry("");
+                        setCustomState("");
                         setPrediction(null);
-                      }} variant="outline" className="mr-2">
+                      }} variant="outline">
                         Make New Prediction
                       </Button>
                       <Button>Download Report</Button>
